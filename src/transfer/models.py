@@ -31,7 +31,7 @@ class Wallet(models.Model):
         ]
 
     def __str__(self):
-        return f"Кошелек {self.user.username} ({self.currency}): {self.balance}"
+        return f"Кошелек {self.user.username} ({self.currency}): {self.balance}"  # noqa
 
 
 class Transaction(models.Model):
@@ -128,7 +128,7 @@ class Transaction(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.total_amount:
-            self.total_amount = self.amount + self.commission
+            self.total_amount = self.amount + self.commission  # noqa
         super().save(*args, **kwargs)
 
 
@@ -168,4 +168,4 @@ class TransactionLock(models.Model):
         unique_together = ["wallet", "transaction"]
 
     def __str__(self):
-        return f"Блокировка {self.wallet.id}: {self.amount} ({self.lock_type})"
+        return f"Блокировка {self.wallet.id}: {self.amount} ({self.lock_type})"  # noqa

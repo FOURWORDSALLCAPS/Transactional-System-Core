@@ -1,7 +1,6 @@
 import time
 import logging
 from celery import shared_task
-from celery.exceptions import MaxRetriesExceededError
 
 logger = logging.getLogger(__name__)
 
@@ -31,15 +30,15 @@ def send_transaction_notification(self, transaction: dict):
             f"Ошибка при отправке уведомления для {transaction['transaction_id']}: {exc}"
         )
 
-        try:
-            raise self.retry(exc=exc, countdown=3)
-        except MaxRetriesExceededError:
+        if self.request.retries >= self.max_retries:
             logger.error(
                 f"Превышено максимальное количество попыток для транзакции {transaction['transaction_id']}"
             )
 
             return {
                 "status": "failed",
-                "message": f"Не удалось отправить уведомление после 3 попыток: {exc}",
+                "message": f"Не удалось отправить уведомление после {self.max_retries} попыток: {exc}",
                 "transaction_id": transaction["transaction_id"],
             }
+
+        raise self.retry(exc=exc, countdown=3)
