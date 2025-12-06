@@ -35,5 +35,4 @@ RUN \
     DJ__SECRET_KEY=empty \
     python ./manage.py collectstatic --noinput
 
-ENTRYPOINT ["bash","entrypoint.sh"]
 CMD ["gunicorn", "webapp.wsgi", "-w", "4","-b","0.0.0.0:8000"]

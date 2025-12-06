@@ -15,14 +15,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.shortcuts import redirect
-from django.conf import settings
-from django.urls import path
+from django.urls import path, include
 
 
 urlpatterns = [
     path("", lambda request: redirect("admin:index")),
     path("admin/", admin.site.urls),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path("api/", include("transfer.urls")),
+]

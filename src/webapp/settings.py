@@ -34,9 +34,20 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
+    "rest_framework.authtoken",
     # third party apps
     "transfer.apps.TransferConfig",
 ]
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -84,21 +95,12 @@ WSGI_APPLICATION = "webapp.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
-if not ENV.DJ.DEBUG:
-    DATABASES = {
-        "default": dj_database_url.config(
-            default=ENV.get_postgres_uri,
-            engine="django.db.backends.postgresql_psycopg2",
-        ),
-    }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": "db_sqlite3",
-        },
-    }
+DATABASES = {
+    "default": dj_database_url.config(
+        default=ENV.get_postgres_uri,
+        engine="django.db.backends.postgresql_psycopg2",
+    ),
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
