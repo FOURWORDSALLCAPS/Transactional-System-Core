@@ -1,0 +1,59 @@
+services:
+  nginx:
+    container_name: nginx
+    hostname: nginx
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./src/static:/collected_static
+    depends_on:
+      - django
+    networks:
+      - main_net
+
+  django:
+    container_name: django
+    hostname: django
+    build:
+      context: ./
+    env_file:
+      - ./src/.env
+    volumes:
+      - ./src:/opt/app/src
+      - ./pyproject.toml:/opt/app/pyproject.toml
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - main_net
+
+  postgres:
+    container_name: postgres
+    hostname: postgres
+    image: postgres:15.6-bullseye
+    env_file:
+      - ./src/.env
+    ports:
+      - "5445:5432"
+    volumes:
+      - ./postgres/migrations:/docker-entrypoint-initdb.d
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres_user -d postgres_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - main_net
+
+volumes:
+  postgres:
+
+networks:
+  main_net:
+    name: main
+    driver: bridge
