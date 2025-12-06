@@ -93,6 +93,20 @@ FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
 
 WSGI_APPLICATION = "webapp.wsgi.application"
 
+CELERY_BROKER_URL = ENV.CELERY_BROKER_URL
+CELERY_RESULT_BACKEND = ENV.CELERY_RESULT_BACKEND
+CELERY_ACCEPT_CONTENT = ENV.CELERY_ACCEPT_CONTENT
+CELERY_TASK_SERIALIZER = ENV.CELERY_TASK_SERIALIZER
+CELERY_RESULT_SERIALIZER = ENV.CELERY_RESULT_SERIALIZER
+CELERY_TIMEZONE = ENV.CELERY_TIMEZONE
+
+CELERY_TASK_ANNOTATIONS = {
+    "*": {
+        "retry_limit": 3,
+        "retry_delay": 3,
+    }
+}
+
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 DATABASES = {

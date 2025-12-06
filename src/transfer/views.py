@@ -16,7 +16,7 @@ from rest_framework.response import Response
 
 from .models import Wallet, Transaction, TransactionLock
 from .serializers import TransferSerializer
-
+from .tasks import send_transaction_notification
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -76,8 +76,8 @@ def calculate_commission(amount: Decimal) -> tuple[Decimal, Decimal, Decimal]:
 def get_or_create_admin_wallet() -> Wallet:
     admin_wallet_id = 100
     try:
-        return Wallet.objects.get(id=admin_wallet_id)
-    except Wallet.DoesNotExist:
+        return Wallet.objects.get(id=admin_wallet_id)  # noqa
+    except Wallet.DoesNotExist:  # noqa
         pass
 
     system_user, _ = User.objects.get_or_create(
@@ -90,7 +90,7 @@ def get_or_create_admin_wallet() -> Wallet:
         },
     )
 
-    admin_wallet, created = Wallet.objects.get_or_create(
+    admin_wallet, created = Wallet.objects.get_or_create(  # noqa
         user=system_user,
         currency="USD",
         defaults={
@@ -106,7 +106,7 @@ def create_transaction_lock(
 ) -> TransactionLock:
     expires_at = timezone.now() + timedelta(minutes=5)
 
-    return TransactionLock.objects.create(
+    return TransactionLock.objects.create(  # noqa
         wallet=wallet,
         transaction=transaction,
         lock_type=lock_type,
@@ -122,7 +122,7 @@ def process_transfer_with_lock(
 
     try:
         with db_transaction.atomic():
-            wallets = Wallet.objects.select_for_update().filter(
+            wallets = Wallet.objects.select_for_update().filter(  # noqa
                 Q(id=from_wallet_id) | Q(id=to_wallet_id)
             )
 
@@ -135,7 +135,7 @@ def process_transfer_with_lock(
 
             transfer_amount, commission, total_amount = calculate_commission(amount)
 
-            active_locks = TransactionLock.objects.filter(
+            active_locks = TransactionLock.objects.filter(  # noqa
                 wallet=from_wallet, expires_at__gt=timezone.now()
             ).aggregate(total_locked=Sum("amount"))["total_locked"] or Decimal("0.00")
 
@@ -147,7 +147,7 @@ def process_transfer_with_lock(
                     f"Доступно: {available_balance}, требуется: {total_amount}"
                 )
 
-            transaction = Transaction.objects.create(
+            transaction = Transaction.objects.create(  # noqa
                 transaction_id=transaction_id,
                 from_wallet=from_wallet,
                 to_wallet=to_wallet,
@@ -178,11 +178,11 @@ def process_transfer_with_lock(
 
             if commission > 0:
                 admin_wallet = get_or_create_admin_wallet()
-                admin_wallet = Wallet.objects.select_for_update().get(
-                    id=admin_wallet.id
+                admin_wallet = Wallet.objects.select_for_update().get(  # noqa
+                    id=admin_wallet.id  # noqa
                 )
 
-                commission_transaction = Transaction.objects.create(
+                commission_transaction = Transaction.objects.create(  # noqa
                     transaction_id=f"{transaction_id}_commission",
                     from_wallet=from_wallet,
                     to_wallet=admin_wallet,
@@ -223,11 +223,31 @@ def process_transfer_with_lock(
             from_wallet.refresh_from_db()
             to_wallet.refresh_from_db()
 
-            TransactionLock.objects.filter(
+            TransactionLock.objects.filter(  # noqa
                 Q(transaction=transaction) | Q(transaction=commission_transaction)
                 if commission_transaction
                 else Q()
             ).delete()
+
+            notification_info = {
+                "transaction_id": transaction_id,
+                "from_wallet_id": from_wallet_id,
+                "to_wallet_id": to_wallet_id,
+                "from_user_id": from_wallet.user.id,
+                "to_user_id": to_wallet.user.id,
+                "to_user_email": to_wallet.user.email,
+                "amount": str(transfer_amount),
+                "commission": str(commission),
+                "total_amount": str(total_amount),
+                "description": description,
+                "timestamp": transaction.completed_at.isoformat(),
+                "new_balance": str(to_wallet.balance),
+                "force_error": True,
+            }
+
+            send_transaction_notification.apply_async(
+                args=[notification_info], countdown=1
+            )
 
             result = {
                 "transaction_id": transaction_id,
@@ -256,14 +276,14 @@ def process_transfer_with_lock(
 
             return result
     except Exception:
-        TransactionLock.objects.filter(
+        TransactionLock.objects.filter(  # noqa
             Q(transaction__transaction_id=transaction_id)
             | Q(transaction__transaction_id=f"{transaction_id}_commission")
         ).delete()
-        Transaction.objects.filter(transaction_id=transaction_id).update(
+        Transaction.objects.filter(transaction_id=transaction_id).update(  # noqa
             status=Transaction.Status.FAILED
         )
-        Transaction.objects.filter(
+        Transaction.objects.filter(  # noqa
             transaction_id=f"{transaction_id}_commission"
         ).update(status=Transaction.Status.FAILED)
 

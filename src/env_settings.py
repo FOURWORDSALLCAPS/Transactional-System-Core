@@ -44,6 +44,13 @@ class EnvSettings(BaseSettings):
     POSTGRES_POOL_SIZE: int = 20
     POSTGRES_MAX_OVERFLOW: int = 5
 
+    CELERY_BROKER_URL: str = "redis://redis:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://redis:6379/0"
+    CELERY_ACCEPT_CONTENT: list[str] = ["json"]
+    CELERY_TASK_SERIALIZER: str = "json"
+    CELERY_RESULT_SERIALIZER: str = "json"
+    CELERY_TIMEZONE: str = "UTC"
+
     model_config = SettingsConfigDict(
         env_file="src/.env",
         env_file_encoding="utf-8",

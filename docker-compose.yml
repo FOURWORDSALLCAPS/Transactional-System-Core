@@ -50,6 +50,43 @@ services:
     networks:
       - main_net
 
+  celery:
+    container_name: celery
+    hostname: celery
+    build:
+      context: ./
+    command: >
+      sh -c "cd /opt/app/src && celery -A webapp.celery_app worker --loglevel=info"
+    env_file:
+      - ./src/.env
+    volumes:
+      - ./src:/opt/app/src
+      - ./pyproject.toml:/opt/app/pyproject.toml
+    depends_on:
+      - django
+      - redis
+      - postgres
+    networks:
+      - main_net
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    hostname: redis
+    volumes:
+      - ./redis/redis.conf:/etc/redis/redis.conf
+    command: [ "redis-server", "/etc/redis/redis.conf" ]
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - main_net
+
 volumes:
   postgres:
 
